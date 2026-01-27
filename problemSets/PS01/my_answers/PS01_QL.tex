@@ -1,0 +1,377 @@
+\documentclass[11pt]{article}
+
+% -----------------------------
+% Packages
+% -----------------------------
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage{hyperref}
+\usepackage{setspace}
+\usepackage{needspace}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\onehalfspacing
+
+% -----------------------------
+% Listings setup (clean, like answer key)
+% -----------------------------
+\lstset{
+	language=R,
+	basicstyle=\ttfamily\footnotesize,
+	columns=fullflexible,
+	breaklines=true,
+	frame=single,
+	rulecolor=\color{black},
+	showstringspaces=false,
+	captionpos=b
+}
+
+% -----------------------------
+% Title
+% -----------------------------
+\title{PS01: Roll-Call Votes in the European Parliament (EP1)}
+\author{ }
+\date{ }
+
+\begin{document}
+	\maketitle
+	
+	% =========================================================
+	\section{Data Manipulation}
+	% =========================================================
+	
+	\subsection{(1) Load datasets into R}
+	
+	I loaded (i) MEP characteristics from \texttt{mep\_info\_26Jul11.xls} (sheet EP1) and
+	(ii) roll-call votes from \texttt{rcv\_ep1.txt}. The key code is:
+	
+	\Needspace{14\baselineskip}
+	\begin{lstlisting}[caption={Loading and cleaning datasets (key code)}, label={lst:load}]
+		library(tidyverse)
+		library(readxl)
+		library(janitor)
+		
+		mep_ep1 <- read_excel("mep_info_26Jul11.xls", sheet = "EP1") %>%
+		clean_names() %>%
+		rename(
+		mepid = mep_id,
+		epg   = ep_group,
+		ms    = member_state,
+		np    = national_party
+		) %>%
+		mutate(
+		nom_d1 = readr::parse_number(as.character(nom_d1)),
+		nom_d2 = readr::parse_number(as.character(nom_d2))
+		)
+		
+		rcv_ep1 <- readr::read_delim("rcv_ep1.txt", delim = ",", show_col_types = FALSE) %>%
+		clean_names()
+	\end{lstlisting}
+	
+	\subsection{(2) Unit of analysis and key variables}
+	
+	\textbf{MEP characteristics dataset (\texttt{mep\_info\_26Jul11.xls}).}
+	The unit of analysis is the individual MEP.
+	Key variables include \texttt{mepid}, \texttt{ms}, \texttt{np}, \texttt{epg}, and ideological positions \texttt{nom\_d1} and \texttt{nom\_d2}.
+	The NOMINATE dimensions summarize MEPs' revealed preferences inferred from roll-call voting.
+	
+	\textbf{Roll-call vote dataset (\texttt{rcv\_ep1.txt}).}
+	The dataset records how each MEP voted in each roll-call vote.
+	In the raw file, the unit of observation is the MEP and the vote outcomes are stored in wide format
+	(\texttt{v1} to \texttt{v886}). Each cell contains a numeric code for voting behaviour.
+	
+	\subsection{(3) Reshape votes from wide to long format}
+	
+	The ID/metadata columns are \texttt{mepid}, \texttt{mepname}, \texttt{ms}, \texttt{np}, and \texttt{epg}.
+	All other columns correspond to vote decisions. I reshaped the dataset into long format using \texttt{pivot\_longer()}.
+	
+	\Needspace{13\baselineskip}
+	\begin{lstlisting}[caption={Wide-to-long reshaping (key code)}, label={lst:pivot}]
+		id_cols   <- c("mepid", "mepname", "ms", "np", "epg")
+		vote_cols <- setdiff(names(rcv_ep1), id_cols)
+		
+		votes_long <- rcv_ep1 %>%
+		pivot_longer(
+		cols = all_of(vote_cols),
+		names_to = "vote_id",
+		values_to = "decision"
+		)
+	\end{lstlisting}
+	
+	\subsection{(4) Merge votes with MEP characteristics and recode decisions}
+	
+	I merged the long-format votes with MEP characteristics by \texttt{mepid}.
+	Following the assignment convention, I excluded the unlabelled group (\texttt{epg = "0"}).
+	Then I recoded vote outcomes into Yes/No/Abstain/Absent-Other, and marked valid votes
+	(Yes/No/Abstain) for denominators.
+	
+	\Needspace{16\baselineskip}
+	\begin{lstlisting}[caption={Merge and recode decisions (key code)}, label={lst:merge_recode}]
+		mep_votes_ep1 <- votes_long %>%
+		left_join(mep_ep1, by = "mepid", suffix = c("", "_mep")) %>%
+		select(-epg_mep) %>%
+		filter(epg != "0")
+		
+		mep_votes_a5 <- mep_votes_ep1 %>%
+		mutate(
+		decision_label = case_when(
+		decision == 1 ~ "Yes",
+		decision == 2 ~ "No",
+		decision == 3 ~ "Abstain",
+		TRUE ~ "Absent/Other"
+		),
+		is_valid = if_else(decision_label %in% c("Yes", "No", "Abstain"), 1L, 0L)
+		)
+	\end{lstlisting}
+	
+	\subsection{(3) Summary of decision categories across all votes}
+	
+	\Needspace{10\baselineskip}
+	\begin{lstlisting}[caption={Counting decision categories (key code)}, label={lst:decision_counts}]
+		decision_counts <- mep_votes_a5 %>%
+		count(decision_label, sort = TRUE)
+		decision_counts
+	\end{lstlisting}
+	
+	\noindent Table \ref{tab:decisioncounts} reports the same counts in formatted form.
+	
+	\begin{table}[H]
+		\centering
+		\footnotesize
+		\renewcommand{\arraystretch}{1.05}
+		\caption{Counts of Voting Decisions Across All Votes}
+		\label{tab:decisioncounts}
+		\input{decision_counts_table.tex}
+	\end{table}
+	
+	
+	\subsection{(5) EP-group statistics: Yes rate, abstention rate, and NOMINATE positions}
+	
+	For each EP group, I computed:
+	(i) mean Yes vote rate = Yes / (Yes+No+Abstain),
+	(ii) mean abstention rate,
+	(iii) mean \texttt{nom\_d1} and \texttt{nom\_d2} across MEPs in the group, and group size.
+	
+	\Needspace{18\baselineskip}
+	\begin{lstlisting}[caption={Computing A5 statistics (key code)}, label={lst:a5}]
+		a5_analysis <- mep_votes_a5 %>%
+		group_by(epg) %>%
+		summarise(
+		total_valid = sum(is_valid, na.rm = TRUE),
+		mean_yes_rate = if_else(total_valid > 0,
+		sum(decision == 1, na.rm = TRUE) / total_valid, NA_real_
+		),
+		mean_abstention_rate = if_else(total_valid > 0,
+		sum(decision == 3, na.rm = TRUE) / total_valid, NA_real_
+		),
+		.groups = "drop"
+		)
+		
+		a5_nominate <- mep_ep1 %>%
+		filter(epg != "0") %>%
+		group_by(epg) %>%
+		summarise(
+		mean_nom_d1 = mean(nom_d1, na.rm = TRUE),
+		mean_nom_d2 = mean(nom_d2, na.rm = TRUE),
+		n_meps = n(),
+		.groups = "drop"
+		)
+		
+		a5_final_table <- left_join(a5_analysis, a5_nominate, by = "epg")
+		a5_final_table
+	\end{lstlisting}
+	
+	\begin{table}[H]
+		\centering
+		\small
+		\setlength{\tabcolsep}{4pt}
+		\caption{Summary Statistics by EP Group (EP1)}
+		\label{tab:a5summary}
+		\resizebox{\textwidth}{!}{\input{a5_final_table_table.tex}}
+	\end{table}
+	
+	% =========================================================
+	\section{Data Visualisation}
+	% =========================================================
+	
+	\subsection{(B1) Distribution of NOMINATE Dimension 1 by EP group}
+	
+	Figure \ref{fig:b1} plots the distribution of \texttt{nom\_d1} by EP group. Figure B1 shows that the distribution of NOMINATE Dimension 1 differs clearly across EP groups. Several groups are concentrated around distinct regions of the ideological spectrum, indicating systematic differences in ideological positioning between EP groups. While some overlap exists, the overall distributions suggest that EP group affiliation is associated with legislators’ positions on the primary ideological dimension.
+	
+	\Needspace{11\baselineskip}
+	\begin{lstlisting}[caption={B1 density plot (key code)}, label={lst:b1}]
+		plot_data <- mep_ep1 %>% filter(epg != "0")
+		
+		p_b1 <- ggplot(plot_data, aes(x = nom_d1, fill = epg)) +
+		geom_density(alpha = 0.35) +
+		labs(x = "nom_d1", y = "Density", fill = "EP group") +
+		theme_minimal()
+	\end{lstlisting}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\textwidth]{fig_b1_density.png}
+		\caption{B1: Distribution of NOMINATE Dimension 1 by EP Group (EP1)}
+		\label{fig:b1}
+	\end{figure}
+	
+	\subsection{(B2) NOMINATE Dimension 1 vs Dimension 2}
+	
+	Figure \ref{fig:b2} shows a scatterplot of \texttt{nom\_d1} vs \texttt{nom\_d2} coloured by EP group. Figure B2 plots MEPs’ positions on NOMINATE Dimension 1 against Dimension 2. The scatterplot shows visible clustering by EP group, with groups occupying different regions of the two-dimensional ideological space. This suggests that EP group membership is associated not only with positions on the primary dimension, but also with variation along the second ideological dimension.
+	
+	\Needspace{10\baselineskip}
+	\begin{lstlisting}[caption={B2 scatter plot (key code)}, label={lst:b2}]
+		p_b2 <- ggplot(plot_data, aes(x = nom_d1, y = nom_d2, color = epg)) +
+		geom_point(alpha = 0.7) +
+		labs(x = "nom_d1", y = "nom_d2", color = "EP group") +
+		theme_minimal()
+	\end{lstlisting}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\textwidth]{fig_b2_scatter.png}
+		\caption{B2: NOMINATE Dimension 1 vs Dimension 2 by EP Group (EP1)}
+		\label{fig:b2}
+	\end{figure}
+	
+	\subsection{(B3) Cohesion within EP groups}
+	
+	Cohesion is measured using each MEP's Yes proportion across valid votes.
+	Figure \ref{fig:b3} shows boxplots of this proportion by EP group. 
+	Figure B3 presents boxplots of the proportion of Yes votes at the MEP level by EP group. Some groups display relatively narrow interquartile ranges, indicating more consistent voting behaviour among their members, while others show wider dispersion. This suggests that levels of internal voting cohesion vary across EP groups.
+	
+	\Needspace{16\baselineskip}
+	\begin{lstlisting}[caption={B3 cohesion (key code)}, label={lst:b3}]
+		mep_yes_prop <- mep_votes_a5 %>%
+		filter(decision %in% c(1, 2, 3)) %>%
+		group_by(mepid, epg) %>%
+		summarise(
+		yes_prop = sum(decision == 1, na.rm = TRUE) / n(),
+		.groups = "drop"
+		)
+		
+		p_b3 <- ggplot(mep_yes_prop, aes(x = epg, y = yes_prop)) +
+		geom_boxplot() +
+		labs(x = "EP group", y = "Yes proportion") +
+		theme_minimal()
+	\end{lstlisting}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.90\textwidth]{fig_b3_boxplot.png}
+		\caption{B3: Proportion Voting Yes by EP Group (Cohesion) -- EP1}
+		\label{fig:b3}
+	\end{figure}
+	
+	\subsection{(B4) Proportion voting Yes per year by national party}
+	
+	I created a lookup table mapping \texttt{vote\_id} to year using \texttt{vote\_info\_Jun2010.xls} (sheet EP1), then merged year back into votes. The diagnostic output reported 886 rows and years 1979--1984 (with a small number of missing years). Figure B4 shows the proportion of Yes votes over time for major national parties. The figure indicates that Yes voting rates differ across parties and vary across years. While some parties display relatively stable patterns, others show noticeable changes over time, suggesting temporal variation in voting behaviour at the national party level.
+	
+	\Needspace{16\baselineskip}
+	\begin{lstlisting}[caption={B4 year merge and aggregation (key code)}, label={lst:b4data}]
+		library(lubridate)
+		library(stringr)
+		
+		vote_info_ep1 <- read_excel("vote_info_Jun2010.xls", sheet = "EP1") %>%
+		clean_names()
+		
+		date_col <- intersect(names(vote_info_ep1), c("vote_date", "date"))[1]
+		
+		vote_year_lookup <- vote_info_ep1 %>%
+		mutate(
+		vote_date_raw = .data[[date_col]],
+		vote_date_chr = str_trim(as.character(vote_date_raw)),
+		vote_date_num = suppressWarnings(as.numeric(vote_date_chr)),
+		vote_date_from_num = if_else(
+		!is.na(vote_date_num),
+		as.Date(vote_date_num, origin = "1899-12-30"),
+		as.Date(NA)
+		),
+		vote_date_from_chr = as.Date(
+		suppressWarnings(lubridate::parse_date_time(
+		str_sub(vote_date_chr, 1, 19),
+		orders = c("Ymd", "Y-m-d", "dmy", "d/m/Y", "m/d/Y", "Y/m/d", "d.m.Y")
+		))
+		),
+		vote_date = coalesce(vote_date_from_num, vote_date_from_chr),
+		vote_id = paste0("v", row_number()),
+		year = year(vote_date)
+		) %>%
+		select(vote_id, year)
+		
+		votes_valid_year <- votes_long %>%
+		left_join(vote_year_lookup, by = "vote_id") %>%
+		mutate(
+		decision_label = case_when(
+		decision == 1 ~ "Yes",
+		decision == 2 ~ "No",
+		decision == 3 ~ "Abstain",
+		TRUE ~ NA_character_
+		)
+		) %>%
+		filter(!is.na(year), decision_label %in% c("Yes", "No", "Abstain"))
+		
+		top_np <- votes_valid_year %>% count(np, sort = TRUE) %>% slice_head(n = 10) %>% pull(np)
+		
+		b4_data <- votes_valid_year %>%
+		mutate(np_plot = if_else(as.character(np) %in% as.character(top_np), as.character(np), "Other")) %>%
+		group_by(year, np_plot) %>%
+		summarise(yes_prop = mean(decision_label == "Yes"), .groups = "drop")
+	\end{lstlisting}
+	
+	\Needspace{10\baselineskip}
+	\begin{lstlisting}[caption={B4 plot (key code)}, label={lst:b4plot}]
+		p_b4 <- ggplot(b4_data, aes(x = factor(year), y = yes_prop, fill = np_plot)) +
+		geom_col(position = "dodge") +
+		labs(x = "Year", y = "Yes proportion", fill = "National party") +
+		theme_minimal() +
+		theme(axis.text.x = element_text(angle = 45, hjust = 1))
+	\end{lstlisting}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.95\textwidth]{fig_b4.png}
+		\caption{B4: Proportion Voting Yes per Year by National Party}
+		\label{fig:b4}
+	\end{figure}
+	
+	\subsection{(B5) Average Yes share per year by EP group}
+	
+	Figure \ref{fig:b5} shows the average Yes share per year for each EP group.Figure B5 displays the average Yes share per year for each EP group. The figure shows that EP groups differ in their overall levels of support, with some groups maintaining consistently higher or lower Yes shares across years. In addition, the trajectories indicate that the average Yes share is not constant over time, highlighting temporal variation in group-level voting behaviour.
+	
+	\Needspace{12\baselineskip}
+	\begin{lstlisting}[caption={B5 aggregation and plot (key code)}, label={lst:b5}]
+		b5_data <- votes_valid_year %>%
+		filter(epg != "0", !is.na(epg)) %>%
+		group_by(year, epg) %>%
+		summarise(avg_yes_share = mean(decision_label == "Yes"), .groups = "drop")
+		
+		p_b5 <- ggplot(b5_data, aes(x = year, y = avg_yes_share, color = epg, group = epg)) +
+		geom_line(linewidth = 1) +
+		geom_point() +
+		labs(x = "Year", y = "Average Yes share", color = "EP group") +
+		theme_minimal()
+	\end{lstlisting}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.95\textwidth]{fig_b5.png}
+		\caption{B5: Average Yes Share per Year by EP Group}
+		\label{fig:b5}
+	\end{figure}
+	
+	% =========================================================
+	\section{Notes on Warnings (reproducibility)}
+	% =========================================================
+	
+	When running the script, R reported parsing warnings when converting NOMINATE variables to numeric
+	(e.g., \texttt{parse\_number()} parsing failures) and removed non-finite observations in plotting.
+	These warnings reflect missing or non-numeric entries in the raw files and do not change the overall workflow.
+	
+
+	
+\end{document}
