@@ -100,10 +100,10 @@ The data for this problem set come from the	National Congregations Study Switzer
 \subsection*{Data Visualization}
 
 \begin{enumerate}
-	\item Create a bar plot visualizing the proportion of congregations by 12-level religious classification (\texttt{TRAD12}) in each year.
-	\item Make a histogram detailing the number of official members using the 12-level religious classification (\texttt{TRAD12}) distinguishing between the 6-level religious classification (\texttt{TRAD6}) by year. Hint: Use \texttt{facet()} for year, \texttt{TRAD6} on the x-axis, and group/fill using \texttt{TRAD12} with the \texttt{position="dodge"}.
-	\item Display the distribution of congregations in 2022 above and below the average yearly income (\texttt{AVG\_INCOME}) in each region using ridge plots.
-	\item Create a boxplot of the number of official members by year and region.
+	\item Create a bar plot visualizing the proportion of congregations above and below the average income (\texttt{AVG\_INCOME}) in each year by 12-level religious classification (\texttt{TRAD12}). Hint: Use \texttt{facet()} for \texttt{YEAR}.
+	\item Make a histogram using \texttt{geom\_col()} detailing the number of official members using the 12-level religious classification (\texttt{TRAD12}) distinguishing between the 6-level religious classification (\texttt{TRAD6}) in 2022. Hint: Use \texttt{facet()} for \texttt{TRAD6}, with \texttt{TRAD12} on the x-axis in addition to group/fill with the \texttt{position="dodge"}.
+	\item Display the distribution of yearly income (\texttt{INCOME}) in 2022 for congregations in each region (\texttt{GDREGION}) using ridge plots.
+	\item Create a boxplot of the number of official members per congregation in 2022 by religious classification (\texttt{TRAD6}) and region (\texttt{GDREGION}). Hint: Use \texttt{facet()} for \texttt{GDREGION}.
 
 \end{enumerate}
 
