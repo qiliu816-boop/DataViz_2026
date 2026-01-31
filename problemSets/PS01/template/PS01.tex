@@ -78,14 +78,14 @@
 	\section*{Roll Call Votes in the European Parliament}
 
 \subsection*{Data Manipulation}
-First, you need to \href{https://personal.lse.ac.uk/hix/HixNouryRolandEPdata.HTM}{download data} from the first six elected European Parliaments on each MEP and how they voted in each recorded roll-call vote.
+First, you need to \href{https://personal.lse.ac.uk/hix/HixNouryRolandEPdata.HTM}{download data} from the first European Parliament, including information on each MEP from EP1 and how they voted in each recorded roll-call vote during EP1.
 
 \vspace{.25cm}
 
 \begin{enumerate}
 \item Load these datasets into your global environment:
 \begin{itemize}
-	\item \texttt{mep\_info\_26Jul11.xls} (MEP characteristics, EP1–EP5)
+	\item \texttt{mep\_info\_26Jul11.xls} (includes MEP characteristics from EP1–EP5, you need “Sheet = EP1”)
 	\item \texttt{rcv\_ep1.txt} (EP1 roll-call votes)
 \end{itemize}
 
@@ -110,9 +110,9 @@ First, you need to \href{https://personal.lse.ac.uk/hix/HixNouryRolandEPdata.HTM
 \begin{enumerate}
 	\item Plot the distribution of the first NOMINATE dimension by EP group, and explain any trends you see.
 	\item Make a scatterplot of \textit{nomdim1} (x-axis) and \textit{nomdim2} (y-axis), with one point per MEP and color by EP group.
-	\item Produce a boxplot of the proportion voting \textit{Yes} by EP group to visualize cohesion.
-	\item Display the proportion voting \textit{Yes} per year by national party using a bar plot.
-	\item For each EP group, calculate the average \textit{Yes} share per year and plot a line graph. 
+	\item Produce a boxplot of the proportion voting \textit{Yes} for each vote by EP group to visualize cohesion.
+	\item Display the proportion voting \textit{Yes} across votes by national party using a bar plot.
+
 \end{enumerate}
 
 

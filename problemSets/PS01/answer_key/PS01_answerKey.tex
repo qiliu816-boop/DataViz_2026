@@ -1,0 +1,227 @@
+\documentclass[12pt,letterpaper]{article}
+\usepackage{graphicx,textcomp}
+\usepackage{natbib}
+\usepackage{setspace}
+\usepackage{fullpage}
+\usepackage{color}
+\usepackage[reqno]{amsmath}
+\usepackage{amsthm}
+\usepackage{fancyvrb}
+\usepackage{amssymb,enumerate}
+\usepackage[all]{xy}
+\usepackage{endnotes}
+\usepackage{lscape}
+\newtheorem{com}{Comment}
+\usepackage{float}
+\usepackage{hyperref}
+\newtheorem{lem} {Lemma}
+\newtheorem{prop}{Proposition}
+\newtheorem{thm}{Theorem}
+\newtheorem{defn}{Definition}
+\newtheorem{cor}{Corollary}
+\newtheorem{obs}{Observation}
+\usepackage[compact]{titlesec}
+\usepackage{dcolumn}
+\usepackage{tikz}
+\usetikzlibrary{arrows}
+\usepackage{multirow}
+\usepackage{xcolor}
+\newcolumntype{.}{D{.}{.}{-1}}
+\newcolumntype{d}[1]{D{.}{.}{#1}}
+\definecolor{light-gray}{gray}{0.65}
+\usepackage{url}
+\usepackage{listings}
+\usepackage{color}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+	backgroundcolor=\color{backcolour},   
+	commentstyle=\color{codegreen},
+	keywordstyle=\color{magenta},
+	numberstyle=\tiny\color{codegray},
+	stringstyle=\color{codepurple},
+	basicstyle=\footnotesize,
+	breakatwhitespace=false,         
+	breaklines=true,                 
+	captionpos=b,                    
+	keepspaces=true,                 
+	numbers=left,                    
+	numbersep=5pt,                  
+	showspaces=false,                
+	showstringspaces=false,
+	showtabs=false,                  
+	tabsize=2
+}
+\lstset{style=mystyle}
+\newcommand{\Sref}[1]{Section~\ref{#1}}
+\newtheorem{hyp}{Hypothesis}
+
+\title{Problem Set 1}
+\author{Data Visualisation for Social Scientists}
+\date{Jeffrey Ziegler}
+
+\begin{document}
+	\maketitle
+	
+	\section*{Instructions}
+	\begin{itemize}
+		\item \textit{Please show your work! You may lose points by simply writing in the answer. If the problem requires you to execute commands in \texttt{R}, please include the code you used to get your answers. Please also include the \texttt{.R} file that contains your code. If you are not sure if work needs to be shown for a particular problem, please ask.}
+		\item \textit{Your homework should be submitted electronically on GitHub.}
+		\item \textit{This problem set is due before 23:59 on Wednesday January 28, 2026. No late assignments will be accepted.}
+	\end{itemize}
+	
+	\vspace{1cm}
+	\section*{Roll Call Votes in the European Parliament}
+	
+	\subsection*{Data Manipulation}
+	\textit{First, you need to \href{https://personal.lse.ac.uk/hix/HixNouryRolandEPdata.HTM}{download data} from the first European Parliament, including information on each MEP from EP1 and how they voted in each recorded roll-call vote during EP1.}
+	
+	\vspace{.25cm}
+	
+	\begin{enumerate}
+		\item \textit{Load these datasets into your global environment:}
+		\begin{itemize}
+			\item \textit{\texttt{mep\_info\_26Jul11.xls} (includes MEP characteristics from EP1–EP5, you need “Sheet = EP1”)}
+			\item \textit{\texttt{rcv\_ep1.txt} (EP1 roll-call votes)}
+		\end{itemize}
+	
+		\lstinputlisting[language=R, firstline=41,lastline=46]{PS01_answerKey.R} 
+		
+		\item \textit{Briefly describe (2–3 sentences each) the unit of analysis and key variables in each of these two datasets.}
+		
+		\begin{itemize}
+			\item \texttt{mep\_info} (EP1 sheet): The unit of observation is an individual MEP, while the main variables of interest are MEPID (unique ID), MEPNAME, MS (member state code),, NP (national party code), EPG(EP party group code), nomdim1 (NOM-D1), and nomdim2 (NOM-D2).
+			\item \texttt{rcv\_ep1}: The unit of analysis is MEP-vote pair in wide format (row per MEP, columns $V_1-V_n$ for votes). Key variables: MEPID, MEPNAME, MS, NP, EPG (metadata), $V_1-V_n$ (vote codes: e.g., Y=Yes, N=No, Abs=Abstain).
+		\end{itemize}
+		
+		\item \textit{The \texttt{rcv\_ep1} data are in a wide format, with V1, V2, …, Vn as separate vote columns.}
+		\begin{itemize}
+			\item \textit{Identify which columns are ID/metadata (\textit{MEPID, MEPNAME, MS, NP, EPG}) and which columns are vote decisions ($V_1$…$V_n$). Tidy the voting data such that each row/observation is a single vote for a single MEP.}
+			\lstinputlisting[language=R, firstline=50,lastline=58]{PS01_answerKey.R} 
+			\item \textit{Create a summary table of counts of decision categories (e.g. Yes/No/Abstain/Present but did not vote/Absent) across all votes.}
+		\end{itemize}
+		\lstinputlisting[language=R, firstline=60,lastline=62]{PS01_answerKey.R} 
+		
+		\begin{table}[!htbp]\caption{Raw counts of vote decision for each MEP.}
+			\centering
+			\vspace*{.25cm}
+			\begin{tabular}{l|l}
+				\hline\hline
+				Decision    &  N\\
+				\hline
+				0  &99753\\
+				1  &88185\\
+				2  &75171\\
+				3  & 9577\\
+				4 &109224\\
+				5 &103618\\
+				\hline\hline
+			\end{tabular}
+		\end{table}
+		\item  \textit{Construct a new dataset that combines MEP-level information with their vote decisions from EP1 in long format (from part 3). Check for missingness.}
+		
+		\lstinputlisting[language=R, firstline=66,lastline=82]{PS01_answerKey.R} 
+		
+		It turns out that we do have missingness along the two Nominate dimensions for 48 MEPs, the majority of whom represent the G and S European Party Groups.
+		
+		\begin{table}[ht]
+			\centering
+			\begin{tabular}{l|l}
+				\hline\hline
+				EPG & n \\ 
+				\hline
+				 0 &   1 \\ 
+				 E &   7 \\ 
+				 G &  10 \\ 
+				 L &   2 \\ 
+				 M &   7 \\ 
+				 N &   4 \\ 
+				 R &   1 \\ 
+				 S &  16 \\ 
+				\hline\hline
+			\end{tabular}
+		\end{table}
+		
+		\item \textit{Compute, for each EP group in EP1:}
+		\begin{itemize}
+			\item \textit{The mean rate of Yes votes (Yes over Yes+No+Abstain) across all roll calls.}
+			\item \textit{The mean abstention rate.}
+			\item \textit{The mean vote preferences along the two contested dimensions (NOM-D1 and NOM-D2).}
+		\end{itemize}
+	\end{enumerate}
+
+		\lstinputlisting[language=R, firstline=86,lastline=95]{PS01_answerKey.R} 
+
+	\begin{table}[!htbp]\caption{Mean "Yes" rate, abstention rate, and vote preference by EP group.}
+	\centering
+	\vspace*{.25cm}
+	\begin{tabular}{l|llll}
+		\hline\hline
+	EP Group & Yes rate & Abstain rate &    NOM-D1     & NOM-D2\\
+	\hline
+	C &  0.25835752  &    0.046794941  &0.8109206 & 0.53011111\\
+	E &  0.21822883  &    0.009206226 & 0.5122441& -0.27672441\\
+	G &  0.08430661  &    0.011482972&  0.2796944 &-0.81805556\\
+	L  & 0.14718313   &   0.019139330  &0.4085111 &-0.32422222\\
+	M  & 0.14323438 &     0.021700243 &-0.3567391 &-0.20130435\\
+	N &  0.09015801  &    0.008713318  &0.2501905 &-0.38561905\\
+	R&   0.08039590 &     0.046622678 &-0.5864167& -0.04191667\\
+	S &  0.19473605  &    0.019432130 &-0.0979600&  0.26092000\\
+		\hline\hline
+\end{tabular}
+\end{table}
+	\subsection*{Data Visualization}
+	
+	\begin{enumerate}
+		\item \textit{Plot the distribution of the first NOMINATE dimension by EP group, and explain any trends you see.}
+		\lstinputlisting[language=R, firstline=103,lastline=105]{PS01_answerKey.R} 
+		\lstinputlisting[language=R, firstline=108,lastline=111]{PS01_answerKey.R} 
+		\begin{figure}[h!]
+			\caption{NOM-D1 Distribution by EP Group}\label{fig1}
+			\centering
+			\includegraphics[width=.6\textwidth]{NOM-D1_EPG_density.pdf}
+		\end{figure}
+
+		We can see in Figure~\ref{fig1} that EP groups show ideological clustering on NOM-D1 (left-right) that we might expect such as Social Democrats (Socialist Group, Party of European Socialists) on the left (Party of European Socialists), Conservatives on the right (Progressive European Democrats, European People's Party). Most of the parties are quite cohesive (i.e., normally distributed around a central ideological point), though a couple of parties are more unequally distributed ideologically. 
+		
+		\item \textit{Make a scatterplot of \textit{nomdim1} (x-axis) and \textit{nomdim2} (y-axis), with one point per MEP and color by EP group.}
+				
+		\lstinputlisting[language=R, firstline=115,lastline=118]{PS01_answerKey.R} 
+		
+		\begin{figure}[h!]
+			\caption{Individual MEPs plotted along NOM-D1 and NOM-D2 distinguished by EP Group.}\label{fig2}
+			\centering
+			\includegraphics[width=.6\textwidth]{NOM_EPG_scatter.pdf}
+		\end{figure}
+	
+		\clearpage
+		\item \textit{Produce a boxplot of the proportion voting \textit{Yes} for each vote by EP group to visualize cohesion.}
+		
+		\lstinputlisting[language=R, firstline=121,lastline=140]{PS01_answerKey.R} 
+		\lstinputlisting[language=R, firstline=143,lastline=148]{PS01_answerKey.R} 
+		
+		\begin{figure}[b!]
+			\caption{Proportion of MEPs that voted yes  distinguished by EP Group.}\label{fig3}
+			\centering
+			\includegraphics[width=.6\textwidth]{Yes_EPG_boxplot.pdf}
+		\end{figure}
+	
+		\item \textit{Display the proportion voting \textit{Yes} across votes by national party using a bar plot.}
+		
+		\lstinputlisting[language=R, firstline=151,lastline=160]{PS01_answerKey.R} 
+		\lstinputlisting[language=R, firstline=164,lastline=169]{PS01_answerKey.R} 
+		
+		\begin{figure}[h!]
+			\caption{Proportion of MEPs that voted yes  distinguished by EP Group.}\label{fig4}
+			\centering
+			\includegraphics[width=.6\textwidth]{Yes_NP_boxplot.pdf}
+		\end{figure}
+	
+	\end{enumerate}
+	
+	
+\end{document}
