@@ -1,0 +1,150 @@
+\documentclass[11pt, a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{caption}
+
+% --- Global Style Settings for R Code Blocks ---
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstset{
+	language=R,
+	backgroundcolor=\color{backcolour},   
+	commentstyle=\color{codegreen},
+	keywordstyle=\color{magenta},
+	numberstyle=\tiny\color{codegray},
+	stringstyle=\color{codepurple},
+	basicstyle=\ttfamily\small,
+	breakatwhitespace=false,         
+	breaklines=true,                 
+	captionpos=b,                    
+	keepspaces=true,                 
+	numbers=left,                    
+	numbersep=5pt,                  
+	showspaces=false,                
+	showstringspaces=false,
+	showtabs=false,                  
+	tabsize=2,
+	frame=single,
+	% These settings ensure the block is treated as a float and stays together
+	float=tp,
+	floatplacement=H 
+}
+
+% --- Document Metadata ---
+\title{Problem Set 2: Data Visualisation for Social Scientists}
+\author{Qi Liu \\ Student No. 25340516}
+\date{February 4, 2026}
+
+\begin{document}
+	
+	\maketitle
+	
+	\section{Introduction}
+	This report details the data manipulation and visualization steps for Problem Set 2, utilizing the National Congregations Study Switzerland (NCSS). The analysis aims to explore income distributions and membership counts across various religious traditions and Swiss regions.
+	
+	\section{Data Manipulation}
+	
+	\subsection{Data Loading and Selection}
+	The dataset is imported using a relative path to ensure portability. Only the necessary variables for this problem set---CASEID, YEAR, GDREGION, NUMOFFMBR, TRAD6, TRAD12, and INCOME---are retained.
+	
+	\begin{lstlisting}[language=R, caption=R Code for Initial Data Selection]
+		library(tidyverse)
+		
+		# Load the raw dataset
+		ncss_raw <- read_csv("data/NCSS_v1.csv", show_col_types = FALSE)
+		
+		# Select variables according to the assignment instructions
+		ncss <- ncss_raw %>%
+		select(CASEID, YEAR, GDREGION, NUMOFFMBR, TRAD6, TRAD12, INCOME)
+	\end{lstlisting}
+	
+	\subsection{Sample Filtering and Descriptive Summaries}
+	The analysis focuses on three specific religious traditions: Christian, Jewish, and Muslim congregations. We calculate the mean and median income for each tradition across the survey waves.
+	
+	\begin{lstlisting}[language=R, caption=Filtering Traditions and Summarizing Income]
+		# Filter for Christian (Chretiennes), Jewish (Juives), and Muslim (Musulmanes)
+		ncss_cjm <- ncss %>%
+		filter(TRAD6 %in% c("Chretiennes", "Juives", "Musulmanes"))
+		
+		# Generate summary statistics for congregations and income
+		summary_stats <- ncss_cjm %>%
+		group_by(YEAR, TRAD6) %>%
+		summarise(
+		n_congregations = n(),
+		mean_income = mean(INCOME, na.rm = TRUE),
+		median_income = median(INCOME, na.rm = TRUE),
+		.groups = "drop"
+		)
+	\end{lstlisting}
+	
+	\subsection{Binary Income Variable Construction}
+	A categorical variable \texttt{AVG\_INCOME} is created to identify congregations that meet or exceed the annual average income.
+	
+	\begin{lstlisting}[language=R, caption=Defining the Binary Income Indicator]
+		# Calculate the mean income per year
+		yearly_means <- ncss_cjm %>%
+		group_by(YEAR) %>%
+		summarise(avg_yr_income = mean(INCOME, na.rm = TRUE), .groups = "drop")
+		
+		# Create the AVG_INCOME indicator (1 = Above or Average, 0 = Below)
+		ncss_cjm <- ncss_cjm %>%
+		left_join(yearly_means, by = "YEAR") %>%
+		mutate(AVG_INCOME = ifelse(INCOME >= avg_yr_income, 1L, 0L))
+	\end{lstlisting}
+	
+	\section{Data Visualisation}
+	
+	\subsection{Income Proportions by Religious Classification}
+	Figure \ref{fig:income_prop} shows the proportion of congregations above and below the average income level. This allows for a longitudinal comparison of financial status across traditions.
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.9\textwidth]{outputs/fig_b1.png} 
+		\caption{Proportion of congregations above/below average income by TRAD12 and YEAR.}
+		\label{fig:income_prop}
+	\end{figure}
+	
+	\subsection{Total Official Members (2022)}
+	Using the 2022 data wave, Figure \ref{fig:members} displays the total official members aggregated by religious tradition using \texttt{geom\_col()}.
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.9\textwidth]{outputs/fig_b2.png}
+		\caption{Total official members by TRAD12 within TRAD6 (2022).}
+		\label{fig:members}
+	\end{figure}
+	
+	\subsection{Regional Income Distributions}
+	The ridge plot in Figure \ref{fig:ridge} illustrates the density and distribution of income across Swiss regions for 2022.
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.9\textwidth]{outputs/fig_b3.png}
+		\caption{Distribution of yearly income by region (2022).}
+		\label{fig:ridge}
+	\end{figure}
+	
+	\subsection{Congregational Membership by Region}
+	The boxplot in Figure \ref{fig:boxplot} displays the variance in official member counts per congregation across regions, faceted by geographic location.
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.9\textwidth]{outputs/fig_b4.png}
+		\caption{Number of official members per congregation by religion and region (2022).}
+		\label{fig:boxplot}
+	\end{figure}
+	
+	\section{Reproducibility}
+	All figures were generated using the \texttt{ggplot2} package and exported to the \texttt{outputs/} directory to ensure results are fully reproducible.
+	
+\end{document}
