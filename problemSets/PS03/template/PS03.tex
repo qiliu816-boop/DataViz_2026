@@ -1,0 +1,110 @@
+\documentclass[12pt,letterpaper]{article}
+\usepackage{graphicx,textcomp}
+\usepackage{natbib}
+\usepackage{setspace}
+\usepackage{fullpage}
+\usepackage{color}
+\usepackage[reqno]{amsmath}
+\usepackage{amsthm}
+\usepackage{fancyvrb}
+\usepackage{amssymb,enumerate}
+\usepackage[all]{xy}
+\usepackage{endnotes}
+\usepackage{lscape}
+\newtheorem{com}{Comment}
+\usepackage{float}
+\usepackage{hyperref}
+\newtheorem{lem} {Lemma}
+\newtheorem{prop}{Proposition}
+\newtheorem{thm}{Theorem}
+\newtheorem{defn}{Definition}
+\newtheorem{cor}{Corollary}
+\newtheorem{obs}{Observation}
+\usepackage[compact]{titlesec}
+\usepackage{dcolumn}
+\usepackage{tikz}
+\usetikzlibrary{arrows}
+\usepackage{multirow}
+\usepackage{xcolor}
+\newcolumntype{.}{D{.}{.}{-1}}
+\newcolumntype{d}[1]{D{.}{.}{#1}}
+\definecolor{light-gray}{gray}{0.65}
+\usepackage{url}
+\usepackage{listings}
+\usepackage{color}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+	backgroundcolor=\color{backcolour},   
+	commentstyle=\color{codegreen},
+	keywordstyle=\color{magenta},
+	numberstyle=\tiny\color{codegray},
+	stringstyle=\color{codepurple},
+	basicstyle=\footnotesize,
+	breakatwhitespace=false,         
+	breaklines=true,                 
+	captionpos=b,                    
+	keepspaces=true,                 
+	numbers=left,                    
+	numbersep=5pt,                  
+	showspaces=false,                
+	showstringspaces=false,
+	showtabs=false,                  
+	tabsize=2
+}
+\lstset{style=mystyle}
+\newcommand{\Sref}[1]{Section~\ref{#1}}
+\newtheorem{hyp}{Hypothesis}
+
+\title{Problem Set 3}
+\date{Due: February 18, 2026}
+\author{Data Visualisation for Social Scientists}
+
+\begin{document}
+	\maketitle
+	
+	\section*{Instructions}
+	\begin{itemize}
+	\item Please show your work! You may lose points by simply writing in the answer. If the problem requires you to execute commands in \texttt{R}, please include the code you used to get your answers. Please also include the \texttt{.R} file that contains your code. If you are not sure if work needs to be shown for a particular problem, please ask.
+\item Your homework should be submitted electronically on GitHub.
+\item This problem set is due before 23:59 on Wednesday February 18, 2026. No late assignments will be accepted.
+	\end{itemize}
+	
+	\vspace{.25cm}
+	\section*{Canadian Election Study}
+	
+The data for this problem set come from the	Canadian Election Study (\href{https://ces-eec.sites.olt.ubc.ca/files/2017/04/CES2015_Combined_Data_Codebook.pdf}{CES})  in 2015. The main purpose of the study is to give a comprehensive picture of the Canadian election: why people vote as they do, what changes during campaigns and across elections, and how Canadian voting compares with that in other democracies.
+
+\subsection*{Data Manipulation}
+
+\begin{enumerate}
+\item Load the CES .csv file from \href{https://raw.githubusercontent.com/ASDS-TCD/DataViz_2026/refs/heads/main/datasets/CES2015.csv}{GitHub} into your global environment. Filter respondents to only include "high quality" participants: 
+\begin{verbatim}
+ces2015 <- ces2015 |> filter(discard == "Good quality")
+\end{verbatim}
+\item Filter the dataset to those participants that answered the question about voting for the past election using \texttt{p\_voted}. Consider respondents who gave a "Yes" answer as having voted, while “No” as not having voted. Treat “Don’t know” and “Refused” as missing.
+\item Create an age variable and group into categories (e.g., $<$30, 30-44, 45-64, 65+). Year of birth is in age (four‑digit year).
+\end{enumerate}
+
+\subsection*{Data Visualization}
+
+\begin{enumerate}
+	\item Plot turnout rate by age group.
+	\item Create a density plot of ideology by party, restricting your sample to respondents with non‑missing left–right self‑placement (0–10 scale) and those that intended to vote for a main party (e.g., Liberal, Conservative, NDP, Bloc in Quebec, and Green).
+	\item Produce histogram counts of turnout by income (\texttt{income\_full}), faceted by province.
+	\item Create your own reusable custom theme. Apply your theme to one of the previous plots and add:
+	\begin{enumerate}
+		\item An improved title summarizing the main substantive takeaway.
+		\item A more informative subtitle describing the sample and variables.
+		\item A caption noting data source, weighting, and key coding decisions.
+		\item At least one direct annotation using \texttt{ggrepel} that calls out a key pattern.
+	\end{enumerate}
+
+\end{enumerate}
+
+
+\end{document}
