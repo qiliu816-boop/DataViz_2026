@@ -1,0 +1,195 @@
+\documentclass[12pt,letterpaper]{article}
+\usepackage{graphicx,textcomp}
+\usepackage{natbib}
+\usepackage{setspace}
+\usepackage{fullpage}
+\usepackage{color}
+\usepackage[reqno]{amsmath}
+\usepackage{amsthm}
+\usepackage{fancyvrb}
+\usepackage{amssymb,enumerate}
+\usepackage[all]{xy}
+\usepackage{endnotes}
+\usepackage{lscape}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage[compact]{titlesec}
+\usepackage{dcolumn}
+\usepackage{tikz}
+\usetikzlibrary{arrows}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{url}
+
+% Customizing Code Highlight (Matching Professor's style)
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+	backgroundcolor=\color{backcolour},   
+	commentstyle=\color{codegreen},
+	keywordstyle=\color{magenta},
+	numberstyle=\tiny\color{codegray},
+	stringstyle=\color{codepurple},
+	basicstyle=\footnotesize\ttfamily,
+	breakatwhitespace=false,         
+	breaklines=true,                 
+	captionpos=b,                    
+	keepspaces=true,                 
+	numbers=left,                    
+	numbersep=5pt,                  
+	showspaces=false,                
+	showstringspaces=false,
+	showtabs=false,                  
+	tabsize=2
+}
+\lstset{style=mystyle}
+
+\title{Problem Set 3: Data Visualisation}
+\author{Qi Liu}
+\date{February 18, 2026}
+
+\begin{document}
+	\maketitle
+	
+	\section{Data Preparation and Sample Restrictions}
+	
+	This analysis uses the Canadian Election Study (CES) 2015. Following the assignment requirements, I first restricted the sample to ``Good quality'' respondents using the \texttt{discard} indicator to reduce noise from low-quality interviews. Turnout was then recoded from the voting question (\texttt{p\_voted}) into a binary variable where ``Yes'' equals 1 and ``No'' equals 0. Don’t know and Refused answers were treated as missing. Age was computed from the birth year (2015 $-$ birth year) and grouped into four standard categories.
+	
+	\begin{lstlisting}[language=R, caption=Data Cleaning and Recoding (matching PS03.R)]
+		# Good quality filter (supports numeric or text codings)
+		discard_txt <- tolower(trimws(as.character(ces_raw$discard)))
+		discard_num <- suppressWarnings(as.numeric(as.character(ces_raw$discard)))
+		
+		good_quality <- dplyr::case_when(
+		!is.na(discard_num) ~ discard_num == 0,
+		discard_txt %in% c("good quality","good_quality","good") ~ TRUE,
+		TRUE ~ FALSE
+		)
+		
+		ces0 <- ces_raw %>% filter(good_quality)
+		
+		# Turnout recode (supports numeric or text codings)
+		voted_txt <- tolower(trimws(as.character(ces0$p_voted)))
+		voted_num <- suppressWarnings(as.numeric(as.character(ces0$p_voted)))
+		
+		ces1 <- ces0 %>%
+		mutate(turnout = case_when(
+		!is.na(voted_num) & voted_num == 1 ~ 1,
+		!is.na(voted_num) & voted_num == 5 ~ 0,
+		!is.na(voted_num) & voted_num %in% c(8,9) ~ NA_real_,
+		voted_txt %in% c("yes","y") ~ 1,
+		voted_txt %in% c("no","n") ~ 0,
+		TRUE ~ NA_real_
+		)) %>%
+		filter(!is.na(turnout))
+		
+		# Age groups (age column treated as birth year)
+		ces2015 <- ces1 %>%
+		mutate(birth_year = suppressWarnings(as.numeric(as.character(age))),
+		birth_year = if_else(birth_year >= 1900 & birth_year <= 2005, birth_year, NA_real_),
+		age_years  = 2015 - birth_year,
+		age_group  = case_when(
+		age_years < 30 ~ "<30",
+		age_years <= 44 ~ "30-44",
+		age_years <= 64 ~ "45-64",
+		age_years >= 65 ~ "65+",
+		TRUE ~ NA_character_
+		),
+		age_group = factor(age_group, levels = c("<30","30-44","45-64","65+"))) %>%
+		filter(!is.na(age_group))
+	\end{lstlisting}
+	
+	
+	\section{Data Visualization}
+	
+	\subsection{Turnout Rate by Age Group}
+	Figure 1 displays the mean turnout rate for each age category. The results reveal a strong monotonic relationship: electoral participation increases with age. Substantively, this aligns with political behavior theories suggesting that older citizens possess higher community stakes and more established voting habits.
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.85\textwidth]{figures/plot1_turnout_by_age.png}
+		\caption{Turnout rate by age group (unweighted).}
+	\end{figure}
+	
+	\subsection{Ideological Self-Placement by Party}
+	Figure 2 compares the distribution of left-right ideological self-placement (0-10) across major parties. The density curves show that Conservative supporters are concentrated on the right, NDP supporters on the left, and Liberal supporters cluster around the center-right.
+
+	\begin{lstlisting}[language=R, caption=Sample restrictions for Figure 2 (major parties)]
+		party_num <- suppressWarnings(as.numeric(as.character(ces$vote_for)))
+		party_txt <- tolower(trimws(as.character(ces$vote_for)))
+		
+		ces_ideo <- ces %>%
+		mutate(
+		selfplace = suppressWarnings(as.numeric(as.character(p_selfplace))),
+		party = case_when(
+		!is.na(party_num) & party_num == 1 ~ "Liberal",
+		!is.na(party_num) & party_num == 2 ~ "Conservative",
+		!is.na(party_num) & party_num == 3 ~ "NDP",
+		!is.na(party_num) & party_num == 4 ~ "Bloc Québécois",
+		!is.na(party_num) & party_num == 5 ~ "Green",
+		party_txt %in% c("liberal","liberals") ~ "Liberal",
+		party_txt %in% c("conservative","conservatives") ~ "Conservative",
+		party_txt %in% c("ndp","new democratic party") ~ "NDP",
+		party_txt %in% c("bloc","bloc quebecois","bloc québécois") ~ "Bloc Québécois",
+		party_txt %in% c("green","greens") ~ "Green",
+		TRUE ~ NA_character_
+		)
+		) %>%
+		filter(!is.na(selfplace), selfplace >= 0, selfplace <= 10) %>%
+		filter(!is.na(party))
+	\end{lstlisting}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.85\textwidth]{figures/plot2_ideology_density_by_party.png}
+		\caption{Density plot of ideological self-placement by intended vote.}
+	\end{figure}
+	
+	\subsection{Turnout by Income and Province}
+	Figure 3 presents counts of turnout by household income, faceted by province. The plot illustrates that while turnout generally remains high across income groups in this "Good quality" sample, the raw counts are significantly influenced by the varying sample sizes across Canadian provinces (e.g., Ontario vs. PEI).
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=1\textwidth]{figures/plot3_turnout_by_income_facet_province.png}
+		\caption{Histogram counts of turnout by income group, faceted by province.}
+	\end{figure}
+	
+	\subsection{Polished Visualization}
+	For the final requirement, I applied a custom theme \texttt{theme\_ps3()} to the age-turnout plot. This version includes direct annotations using \texttt{ggrepel} to highlight the participation gap between the youngest and oldest cohorts, making the substantive takeaway immediately clear to the reader.
+	
+	\begin{lstlisting}[language=R, caption=Reusable custom theme + direct annotation (ggrepel)]
+		theme_ps3 <- function() {
+			theme_minimal(base_size = 12) +
+			theme(
+			plot.title.position = "plot",
+			plot.title = element_text(face = "bold", size = 15),
+			plot.subtitle = element_text(size = 11),
+			plot.caption = element_text(size = 9, color = "grey30"),
+			panel.grid.minor = element_blank(),
+			legend.position = "top"
+			)
+		}
+		
+		p1_final <- p1 + theme_ps3() +
+		ggrepel::geom_label_repel(
+		data = turnout_by_age %>% filter(age_group %in% c(gap_df$min_group, gap_df$max_group)),
+		aes(label = paste0(as.character(age_group), ": ", scales::percent(turnout_rate, accuracy = 1))),
+		nudge_y = 0.08,
+		show.legend = FALSE
+		)
+	\end{lstlisting}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.9\textwidth]{figures/plot4_final_polished.png}
+		\caption{Final Polished Plot: Age and Turnout Engagement.}
+	\end{figure}
+	
+	\section{Reflection and Limitations}
+	These descriptive visualizations suggest strong associations, particularly between age and turnout. However, they do not imply causality. Factors such as education and political interest likely confound these relationships. Furthermore, using counts in Figure 3 makes provincial comparisons difficult; using within-province proportions would be a more robust approach for future research.
+	
+\end{document}
