@@ -1,0 +1,147 @@
+\documentclass[12pt,letterpaper]{article}
+\usepackage{graphicx,textcomp}
+\usepackage{natbib}
+\usepackage{setspace}
+\usepackage{fullpage}
+\usepackage{color}
+\usepackage[reqno]{amsmath}
+\usepackage{amsthm}
+\usepackage{fancyvrb}
+\usepackage{amssymb,enumerate}
+\usepackage[all]{xy}
+\usepackage{endnotes}
+\usepackage{lscape}
+\newtheorem{com}{Comment}
+\usepackage{float}
+\usepackage{hyperref}
+\newtheorem{lem} {Lemma}
+\newtheorem{prop}{Proposition}
+\newtheorem{thm}{Theorem}
+\newtheorem{defn}{Definition}
+\newtheorem{cor}{Corollary}
+\newtheorem{obs}{Observation}
+\usepackage[compact]{titlesec}
+\usepackage{dcolumn}
+\usepackage{tikz}
+\usetikzlibrary{arrows}
+\usepackage{multirow}
+\usepackage{xcolor}
+\newcolumntype{.}{D{.}{.}{-1}}
+\newcolumntype{d}[1]{D{.}{.}{#1}}
+\definecolor{light-gray}{gray}{0.65}
+\usepackage{url}
+\usepackage{listings}
+\usepackage{color}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+	backgroundcolor=\color{backcolour},   
+	commentstyle=\color{codegreen},
+	keywordstyle=\color{magenta},
+	numberstyle=\tiny\color{codegray},
+	stringstyle=\color{codepurple},
+	basicstyle=\footnotesize,
+	breakatwhitespace=false,         
+	breaklines=true,                 
+	captionpos=b,                    
+	keepspaces=true,                 
+	numbers=left,                    
+	numbersep=5pt,                  
+	showspaces=false,                
+	showstringspaces=false,
+	showtabs=false,                  
+	tabsize=2
+}
+\lstset{style=mystyle}
+\newcommand{\Sref}[1]{Section~\ref{#1}}
+\newtheorem{hyp}{Hypothesis}
+
+\title{Problem Set 3}
+\date{Data Visualisation for Social Scientists}
+\author{Jeffrey Ziegler}
+
+\begin{document}
+	\maketitle
+	
+	\section*{Instructions}
+	\begin{itemize}
+			\item \textit{Please show your work! You may lose points by simply writing in the answer. If the problem requires you to execute commands in \texttt{R}, please include the code you used to get your answers. Please also include the \texttt{.R} file that contains your code. If you are not sure if work needs to be shown for a particular problem, please ask.}
+		\item \textit{Your homework should be submitted electronically on GitHub.}
+		\item \textit{This problem set is due before 23:59 on Wednesday February 18, 2026. No late assignments will be accepted.}
+	\end{itemize}
+	
+	\vspace{.25cm}
+\section*{Canadian Election Study}
+
+\textit{The data for this problem set come from the	Canadian Election Study (\href{https://ces-eec.sites.olt.ubc.ca/files/2017/04/CES2015_Combined_Data_Codebook.pdf}{CES})  in 2015. The main purpose of the study is to give a comprehensive picture of the Canadian election: why people vote as they do, what changes during campaigns and across elections, and how Canadian voting compares with that in other democracies.}
+
+\begin{enumerate}
+	\item \textit{Load the CES .csv file from \href{https://raw.githubusercontent.com/ASDS-TCD/DataViz_2026/refs/heads/main/datasets/CES2015.csv}{GitHub} into your global environment. Filter respondents to only include "high quality" participants: }
+	\begin{verbatim}
+		ces2015 <- ces2015 |> filter(discard == "Good quality")
+	\end{verbatim}
+
+	\lstinputlisting[language=R, firstline=40,lastline=46, basicstyle=\footnotesize]{PS03_answerKey.R} 
+	
+	\item \textit{Filter the dataset to those participants that answered the question about voting for the past election using \texttt{p\_voted}. Consider respondents who gave a "Yes" answer as having voted, while “No” as not having voted. Treat “Don’t know” and “Refused” as missing.}
+
+	\lstinputlisting[language=R, firstline=49,lastline=50, basicstyle=\footnotesize]{PS03_answerKey.R} 
+
+	\item \textit{Create an age variable and group into categories (e.g., $<$30, 30-44, 45-64, 65+). Year of birth is in age (four‑digit year).}
+
+	\lstinputlisting[language=R, firstline=53,lastline=63, basicstyle=\footnotesize]{PS03_answerKey.R} 
+\end{enumerate}
+
+\subsection*{Data Visualization}
+
+\begin{enumerate}
+	\item \textit{Plot turnout rate by age group.}
+	
+	\lstinputlisting[language=R, firstline=71,lastline=80, basicstyle=\footnotesize]{PS03_answerKey.R} 
+		
+	\begin{figure}[htbp!]\caption{\footnotesize Turnout rate  in Canadian federal election as a percentage of all possible voters by age group.}
+		\centering
+		\includegraphics[width=.8\textwidth]{plot1.pdf}
+	\end{figure}		
+
+	\item \textit{Create a density plot of ideology by party, restricting your sample to respondents with non‑missing left–right self‑placement (0–10 scale) and those that intended to vote for a main party (e.g., Liberal, Conservative, NDP, Bloc in Quebec, and Green).}
+
+	\lstinputlisting[language=R, firstline=84,lastline=94, basicstyle=\footnotesize]{PS03_answerKey.R} 
+	
+	\begin{figure}[htbp!]\caption{\footnotesize Ideological placement of party voters in Canadian federal election.}
+		\centering
+		\includegraphics[width=.8\textwidth]{plot2.pdf}
+	\end{figure}		
+
+	\item \textit{Produce histogram counts of turnout by income (\texttt{income\_full}), faceted by province.}
+	
+	\lstinputlisting[language=R, firstline=98,lastline=117, basicstyle=\footnotesize]{PS03_answerKey.R} 
+	
+		\begin{figure}[htbp!]\caption{\footnotesize Turnout in Canadian federal election by region.}
+		\centering
+		\includegraphics[width=.8\textwidth]{plot3.pdf}
+	\end{figure}	
+	
+	\item \textit{Create your own reusable custom theme. Apply your theme to one of the previous plots and add:}
+	\begin{enumerate}
+		\item \textit{An improved title summarizing the main substantive takeaway.}
+		\item \textit{A more informative subtitle describing the sample and variables.}
+		\item \textit{A caption noting data source, weighting, and key coding decisions.}
+		\item \textit{At least one direct annotation that calls out a key pattern.}
+	\end{enumerate}
+
+	\lstinputlisting[language=R, firstline=142,lastline=154, basicstyle=\footnotesize]{PS03_answerKey.R} 
+	
+	\begin{figure}[htbp!]\caption{\footnotesize Turnout in Canadian federal election by region.}
+		\centering
+		\includegraphics[width=.8\textwidth]{plot4.pdf}
+	\end{figure}	
+	
+\end{enumerate}
+	
+	
+\end{document}
